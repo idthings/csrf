@@ -7,13 +7,13 @@
 * Easy secret rotation
 * No datastore required
 
-#### Approach
+### Approach
 This is a, kind of, reverse HMAC header.
 Using a random token as the 'data'.
 
 The server side generates a random token, which is sent as a hidden form field.
 The server uses its secret to create a SHA256 hash of the random token, as a second hidden form field.
-When the form is submitted, the server re-computes the hash from the submitted form and compares.
+When the form is submitted, the server re-computes the hash of the submitted token and compares.
 
 The server secrets can be rotated, regularly, without breaking in-flight form requests.
 Server secrets are picked up from the env var CSRF_SALTS, a list in csv format.
@@ -27,8 +27,8 @@ Deploy a cron job to all containers ahead of time, which updates the env var.
 
 We always generate new tokens using the left-most secret.
 And we walk left to right when validating incoming hashes.
-Logging which secret (index) was used, means you can remove right-most secrets when they are no longer in use.
-#### Use
+Logging which secret (index) was used, means you can learn how long you need to leave right-most secrets active.
+### Use
 ```
 $ go get github.com/idthings/csrf
 $ export CSRF_SALTS='myreallylongsaltthatshouldberandom'
@@ -62,7 +62,15 @@ func FormRequestHandler(w http.ResponseWriter, r *http.Request) {
     hash := r.FormValue("_hash")
     valid, keyUsed := csrf.Validate(token, hash)
     if valid && keyUsed > 0 {
-        log.Info("CSRF: valid use of key", keyUsed)
+        log.Info("CSRF: valid use of CRSF_SALT %d", keyUsed)
     }
+    log.Info("CSRF: token %s, hash %s", token, hash)
+    log.Info("CSRF: validated %t", valid)
 }
+```
+Output:
+```
+2021/05/01 15:02:56 CSRF: valid use of CSRF_SALT 3
+2021/05/01 15:02:56 CSRF: token veClIlI6DN5qBeFifxodUt08PEAFXDvb, hash UhAD9N3wO/lVFojcM23WJCeiyAnkXTTe51n8seVoZac=
+2021/05/01 15:02:56 CSRF: validated true
 ```
