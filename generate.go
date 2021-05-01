@@ -32,7 +32,10 @@ func Validate(inputToken string, inputHash string) (bool, int) {
 func Generate() (string, string, error) {
 
 	token := alphanum.New(TokenLen)
+	return GenerateWithToken(token)
+}
 
+func GenerateWithToken(token string) (string, string, error) {
 	salts := getSaltList()
 	if len(salts) < 1 || salts[0] == "" {
 		return token, "", errors.New("csrf.Generate(): No salts found in ENV")
