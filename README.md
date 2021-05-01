@@ -16,7 +16,7 @@ The server uses its secret to create a SHA256 hash of the random token, as a sec
 When the form is submitted, the server re-computes the hash from the submitted form and compares.
 
 The server secrets can be rotated, regularly, without breaking in-flight form requests.
-Server secrets are picked up from the env var CSRF_SALTS, in csv format.
+Server secrets are picked up from the env var CSRF_SALTS, a list in csv format.
 Inject these into the Docker container, or the local env.
 ```
 $ echo $CSRF_SALTS
@@ -33,14 +33,22 @@ Logging which secret (index) was used, means you can remove right-most secrets w
 $ go get github.com/idthings/csrf
 $ export CSRF_SALTS='myreallylongsaltthatshouldberandom'
 ```
-Once imported, generating a token and has is:
+Once imported, generating a token:
 ```
     csrfToken, csrfHash, err := csrf.Generate()
     if err != nil {
         // do something
     }
+    
+    var templateData = struct{
+        CSRFToken string
+        CSRFHash string
+    }{
+        CSRFToken: csrfToken,
+        CSRFHash: csrfHash,
+    }
 ```
-And in a Go html template:
+And using the token/hash pair in a Go html template:
 ```
 <input type="hidden" name="_token" value="{{ .CSRFToken }}" />
 <input type="hidden" name="_hash" value="{{ .CSRFHash }}" />
